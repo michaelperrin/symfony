@@ -35,8 +35,10 @@
 {%- endblock textarea_widget %}
 
 {% block choice_widget -%}
-    {% if expanded %}
+    {% if widget == 'radio' or widget == 'checkbox' %}
         {{- block('choice_widget_expanded') -}}
+    {% elseif widget == 'text' %}
+        {{- block('form_widget_simple') -}}
     {% else %}
         {{- block('choice_widget_collapsed') -}}
     {% endif %}

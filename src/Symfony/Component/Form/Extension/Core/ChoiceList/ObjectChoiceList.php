@@ -38,7 +38,7 @@ class ObjectChoiceList extends ChoiceList
     /**
      * @var PropertyAccessorInterface
      */
-    private $propertyAccessor;
+    protected $propertyAccessor;
 
     /**
      * The property path used to obtain the choice label.

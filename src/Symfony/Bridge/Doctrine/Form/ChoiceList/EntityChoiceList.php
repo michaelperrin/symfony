@@ -85,6 +85,13 @@ class EntityChoiceList extends ObjectChoiceList
     private $preferredEntities = array();
 
     /**
+     * Label path name
+     * 
+     * @var string
+     */
+    private $labelPathName;
+
+    /**
      * Creates a new entity choice list.
      *
      * @param ObjectManager             $manager           An EntityManager instance
@@ -104,6 +111,7 @@ class EntityChoiceList extends ObjectChoiceList
         $this->entityLoader = $entityLoader;
         $this->classMetadata = $manager->getClassMetadata($class);
         $this->class = $this->classMetadata->getName();
+        $this->labelPathName = $labelPath;
         $this->loaded = is_array($entities) || $entities instanceof \Traversable;
         $this->preferredEntities = $preferredEntities;
 
@@ -214,6 +222,32 @@ class EntityChoiceList extends ObjectChoiceList
             return array();
         }
 
+        // // TODO : change to correct condition
+        if (true) {
+            // TODO : check, comparing this line, with the if below
+            // TODO : does not work for multiple
+            // TODO : when there is an entity repository given !!!!!!!!!!!!!
+            // TODO : how to search for entities that have multiple indexes : @see EntityManager.php line 407
+            
+            $identifier = $this->classMetadata->getIdentifierFieldNames();
+            $identifier = current($identifier); // TODO
+
+            if ($this->entityLoader) {
+                // A query builder is defined
+                $entities = $this->entityLoader->getEntitiesByIds($identifier, $values);
+            } else {
+                if (null !== $this->labelPathName) {
+                    $searchPropertyName = $this->labelPathName;
+                } else {
+                    $searchPropertyName = $identifier;
+                }
+
+                $entities = $this->em->getRepository($this->class)->findBy(array($searchPropertyName => $values));
+            }
+
+            return $entities;
+        }
+
         if (!$this->loaded) {
             // Optimize performance in case we have an entity loader and
             // a single-field identifier
@@ -257,9 +291,36 @@ class EntityChoiceList extends ObjectChoiceList
      */
     public function getValuesForChoices(array $entities)
     {
+        var_dump($entities);
+
         // Performance optimization
-        if (empty($entities)) {
+        if (empty($entities) || (count($entities) === 1 && null === current($entities))) {
             return array();
+        }
+
+        // TODO !!!!
+        // HERE !!!!!!
+        if (true) {
+            $values = array();
+
+            foreach ($entities as $i => $entity) {
+                // TODO : property access
+                
+                if (!empty($this->labelPathName)) {
+                    $values[$i] = $this->propertyAccessor->getValue($entity, $this->labelPathName);
+                } else {
+                    // $identifier = $this->classMetadata->getIdentifierFieldNames();
+                    // $identifier = current($identifier); // TODO
+
+                    // TODO : check (this copied from code below)
+                    if ($entity instanceof $this->class) {
+                        // Make sure to convert to the right format
+                        $values[$i] = $this->fixValue(current($this->getIdentifierValues($entity)));
+                    }
+                }
+            }
+
+            return $values;
         }
 
         if (!$this->loaded) {

@@ -97,9 +97,7 @@ class ChoiceType extends AbstractType
     {
         $view->vars = array_replace($view->vars, array(
             'multiple'          => $options['multiple'],
-            'expanded'          => $options['expanded'],
-            'preferred_choices' => $options['choice_list']->getPreferredViews(),
-            'choices'           => $options['choice_list']->getRemainingViews(),
+            'widget'            => $options['widget'],
             'separator'         => '-------------------',
             'placeholder'       => null,
         ));
@@ -124,6 +122,19 @@ class ChoiceType extends AbstractType
         // Only add the empty value option if this is not the case
         if (null !== $options['placeholder'] && !$view->vars['placeholder_in_choices']) {
             $view->vars['placeholder'] = $options['placeholder'];
+        }
+
+        if ($options['widget'] !== 'text') {
+            $view->vars['preferred_choices'] = $options['choice_list']->getPreferredViews();
+            $view->vars['choices'] = $options['choice_list']->getRemainingViews();
+
+            // Check if the choices already contain the empty value
+            $view->vars['empty_value_in_choices'] = 0 !== count($options['choice_list']->getChoicesForValues(array('')));
+
+            // Only add the empty value option if this is not the case
+            if (null !== $options['empty_value'] && !$view->vars['empty_value_in_choices']) {
+                $view->vars['empty_value'] = $options['empty_value'];
+            }
         }
 
         // BC
@@ -227,6 +238,8 @@ class ChoiceType extends AbstractType
             'placeholder'       => $placeholder,
             'error_bubbling'    => false,
             'compound'          => $compound,
+            'widget'            => 'select',
+            'delimiter'         => '',
             // The view data is always a string, even if the "data" option
             // is manually set to an object.
             // See https://github.com/symfony/symfony/pull/5582
@@ -240,6 +253,10 @@ class ChoiceType extends AbstractType
 
         $resolver->setAllowedTypes(array(
             'choice_list' => array('null', 'Symfony\Component\Form\Extension\Core\ChoiceList\ChoiceListInterface'),
+        ));
+
+        $resolver->setAllowedValues(array(
+            'widget' => array('select', 'checkbox', 'radio', 'text'),
         ));
     }
 
