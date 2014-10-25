@@ -37,7 +37,7 @@
 {% block choice_widget -%}
     {% if widget == 'radio' or widget == 'checkbox' %}
         {{- block('choice_widget_expanded') -}}
-    {% elseif widget == 'text' %}
+    {% elseif widget == 'text' or widget == 'hidden' %}
         {{- block('form_widget_simple') -}}
     {% else %}
         {{- block('choice_widget_collapsed') -}}

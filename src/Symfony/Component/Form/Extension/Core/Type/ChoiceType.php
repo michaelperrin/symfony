@@ -116,24 +116,16 @@ class ChoiceType extends AbstractType
             };
         }
 
-        // Check if the choices already contain the empty value
-        $view->vars['placeholder_in_choices'] = 0 !== count($options['choice_list']->getChoicesForValues(array('')));
-
-        // Only add the empty value option if this is not the case
-        if (null !== $options['placeholder'] && !$view->vars['placeholder_in_choices']) {
-            $view->vars['placeholder'] = $options['placeholder'];
-        }
-
-        if ($options['widget'] !== 'text') {
+        if ($options['widget'] !== 'text' && $options['widget'] !== 'hidden') {
             $view->vars['preferred_choices'] = $options['choice_list']->getPreferredViews();
             $view->vars['choices'] = $options['choice_list']->getRemainingViews();
 
             // Check if the choices already contain the empty value
-            $view->vars['empty_value_in_choices'] = 0 !== count($options['choice_list']->getChoicesForValues(array('')));
+            $view->vars['placeholder_in_choices'] = 0 !== count($options['choice_list']->getChoicesForValues(array('')));
 
             // Only add the empty value option if this is not the case
-            if (null !== $options['empty_value'] && !$view->vars['empty_value_in_choices']) {
-                $view->vars['empty_value'] = $options['empty_value'];
+            if (null !== $options['placeholder'] && !$view->vars['placeholder_in_choices']) {
+                $view->vars['placeholder'] = $options['placeholder'];
             }
         }
 
@@ -256,7 +248,7 @@ class ChoiceType extends AbstractType
         ));
 
         $resolver->setAllowedValues(array(
-            'widget' => array('select', 'checkbox', 'radio', 'text'),
+            'widget' => array('select', 'checkbox', 'radio', 'text', 'hidden'),
         ));
     }
 
