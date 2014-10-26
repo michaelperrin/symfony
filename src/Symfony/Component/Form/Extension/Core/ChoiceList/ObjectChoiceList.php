@@ -45,7 +45,7 @@ class ObjectChoiceList extends ChoiceList
      *
      * @var PropertyPath
      */
-    private $labelPath;
+    protected $labelPath;
 
     /**
      * The property path used for object grouping.
