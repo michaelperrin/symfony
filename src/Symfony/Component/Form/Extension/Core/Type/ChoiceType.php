@@ -127,11 +127,11 @@ class ChoiceType extends AbstractType
             if (null !== $options['placeholder'] && !$view->vars['placeholder_in_choices']) {
                 $view->vars['placeholder'] = $options['placeholder'];
             }
-        }
 
-        // BC
-        $view->vars['empty_value'] = $view->vars['placeholder'];
-        $view->vars['empty_value_in_choices'] = $view->vars['placeholder_in_choices'];
+            // BC
+            $view->vars['empty_value'] = $view->vars['placeholder'];
+            $view->vars['empty_value_in_choices'] = $view->vars['placeholder_in_choices'];
+        }
 
         if ($options['multiple'] && !$options['expanded']) {
             // Add "[]" to the name in case a select tag with multiple options is
