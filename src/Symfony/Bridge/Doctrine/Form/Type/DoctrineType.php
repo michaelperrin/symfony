@@ -133,6 +133,8 @@ abstract class DoctrineType extends AbstractType
                     $options['choices'],
                     $options['preferred_choices'],
                     $options['group_by'],
+                    $options['multiple'],
+                    $options['group_by'],
                     $propertyAccessor
                 );
             }

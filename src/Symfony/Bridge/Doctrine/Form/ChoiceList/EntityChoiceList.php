@@ -84,6 +84,8 @@ class EntityChoiceList extends ObjectChoiceList
      */
     private $preferredEntities = array();
 
+    private $hasValues = false;
+
     /**
      * Creates a new entity choice list.
      *
@@ -98,7 +100,7 @@ class EntityChoiceList extends ObjectChoiceList
      *                                                     the choices are given as flat array.
      * @param PropertyAccessorInterface $propertyAccessor  The reflection graph for reading property paths.
      */
-    public function __construct(ObjectManager $manager, $class, $labelPath = null, EntityLoaderInterface $entityLoader = null, $entities = null,  array $preferredEntities = array(), $groupPath = null, PropertyAccessorInterface $propertyAccessor = null)
+    public function __construct(ObjectManager $manager, $class, $labelPath = null, EntityLoaderInterface $entityLoader = null, $entities = null,  array $preferredEntities = array(), $groupPath = null, $multiple = null, $delimiter = null, PropertyAccessorInterface $propertyAccessor = null)
     {
         $this->em = $manager;
         $this->entityLoader = $entityLoader;
@@ -214,61 +216,33 @@ class EntityChoiceList extends ObjectChoiceList
             return array();
         }
 
-        // // TODO : change to correct condition
-        if (true) {
-            // TODO : does not work for multiple
-            
-            $labelPropertyPath = $this->getLabelPropertyPath();
-
-            if ($this->idAsValue && $this->entityLoader && $labelPropertyPath === $this->idField) {
-                // A query builder is defined
-                $entities = $this->entityLoader->getEntitiesByIds($this->idField, $values);
-            } else {
-                // Search entities using the property path used to display the choice if there is one
-                if (null !== $labelPropertyPath) {
-                    $identifier = $labelPropertyPath;
-                } else {
-                    $identifier = $this->classMetadata->getSingleIdentifierFieldName();
-                }
-
-                if ($this->entityLoader) {
-                    // TODO : name of getEntitiesByIds is not very logical
-                    $entities = $this->entityLoader->getEntitiesByIds($identifier, $values);
-                } else {
-                    $entities = $this->em->getRepository($this->class)->findBy(array($identifier => $values));
-                }
-            }
-
-            return $entities;
-        }
-
         if (!$this->loaded) {
             // Optimize performance in case we have an entity loader and
             // a single-field identifier
-            if ($this->idAsValue && $this->entityLoader) {
-                $unorderedEntities = $this->entityLoader->getEntitiesByIds($this->idField, $values);
-                $entitiesByValue = array();
-                $entities = array();
+            // if ($this->idAsValue && $this->entityLoader) {
+            //     $unorderedEntities = $this->entityLoader->getEntitiesByIds($this->idField, $values);
+            //     $entitiesByValue = array();
+            //     $entities = array();
 
-                // Maintain order and indices from the given $values
-                // An alternative approach to the following loop is to add the
-                // "INDEX BY" clause to the Doctrine query in the loader,
-                // but I'm not sure whether that's doable in a generic fashion.
-                foreach ($unorderedEntities as $entity) {
-                    $value = $this->fixValue(current($this->getIdentifierValues($entity)));
-                    $entitiesByValue[$value] = $entity;
-                }
+            //     // Maintain order and indices from the given $values
+            //     // An alternative approach to the following loop is to add the
+            //     // "INDEX BY" clause to the Doctrine query in the loader,
+            //     // but I'm not sure whether that's doable in a generic fashion.
+            //     foreach ($unorderedEntities as $entity) {
+            //         $value = $this->fixValue(current($this->getIdentifierValues($entity)));
+            //         $entitiesByValue[$value] = $entity;
+            //     }
 
-                foreach ($values as $i => $value) {
-                    if (isset($entitiesByValue[$value])) {
-                        $entities[$i] = $entitiesByValue[$value];
-                    }
-                }
+            //     foreach ($values as $i => $value) {
+            //         if (isset($entitiesByValue[$value])) {
+            //             $entities[$i] = $entitiesByValue[$value];
+            //         }
+            //     }
 
-                return $entities;
-            }
+            //     return $entities;
+            // }
 
-            $this->load();
+            $this->load($values);
         }
 
         return parent::getChoicesForValues($values);
@@ -285,35 +259,34 @@ class EntityChoiceList extends ObjectChoiceList
      */
     public function getValuesForChoices(array $entities)
     {
-        var_dump($entities);
-
         // Performance optimization
         if (empty($entities) || (count($entities) === 1 && null === current($entities))) {
             return array();
         }
 
         // TODO !!!!
-        // HERE !!!!!!
-        if (true) {
-            $values = array();
+        // if (true) {
 
-            $labelPropertyPath = $this->getLabelPropertyPath();
 
-            foreach ($entities as $i => $entity) {
-                if ($this->idAsValue && $labelPropertyPath === $this->idField) {
-                    if ($entity instanceof $this->class) {
-                        // Make sure to convert to the right format
-                        $values[$i] = $this->fixValue(current($this->getIdentifierValues($entity)));
-                    }
-                } else {
-                    $propertyPath = $labelPropertyPath ? $labelPropertyPath : $this->idField;
+        //     $values = array();
 
-                    $values[$i] = $this->propertyAccessor->getValue($entity, $propertyPath);
-                }
-            }
+        //     $labelPropertyPath = $this->getLabelPropertyPath();
 
-            return $values;
-        }
+        //     foreach ($entities as $i => $entity) {
+        //         if ($this->idAsValue && $labelPropertyPath === $this->idField) {
+        //             if ($entity instanceof $this->class) {
+        //                 // Make sure to convert to the right format
+        //                 $values[$i] = $this->fixValue(current($this->getIdentifierValues($entity)));
+        //             }
+        //         } else {
+        //             $propertyPath = $labelPropertyPath ? $labelPropertyPath : $this->idField;
+
+        //             $values[$i] = $this->propertyAccessor->getValue($entity, $propertyPath);
+        //         }
+        //     }
+
+        //     return $values;
+        // }
 
 
 
@@ -476,12 +449,39 @@ class EntityChoiceList extends ObjectChoiceList
     /**
      * Loads the list with entities.
      */
-    private function load()
+    private function load($values = null)
     {
-        if ($this->entityLoader) {
-            $entities = $this->entityLoader->getEntities();
+        if (null !== $values) {
+            $this->hasValues = true;
+
+            // TODO : does not work for multiple
+
+            $labelPropertyPath = $this->getLabelPropertyPath();
+
+            if ($this->idAsValue && $this->entityLoader && $labelPropertyPath === $this->idField) {
+                // A query builder is defined
+                $entities = $this->entityLoader->getEntitiesByIds($this->idField, $values);
+            } else {
+                // Search entities using the property path used to display the choice if there is one
+                if (null !== $labelPropertyPath) {
+                    $identifier = $labelPropertyPath;
+                } else {
+                    $identifier = $this->classMetadata->getSingleIdentifierFieldName();
+                }
+
+                if ($this->entityLoader) {
+                    // TODO : name of getEntitiesByIds is not very logical
+                    $entities = $this->entityLoader->getEntitiesByIds($identifier, $values);
+                } else {
+                    $entities = $this->em->getRepository($this->class)->findBy(array($identifier => $values));
+                }
+            }
         } else {
-            $entities = $this->em->getRepository($this->class)->findAll();
+            if ($this->entityLoader) {
+                $entities = $this->entityLoader->getEntities();
+            } else {
+                $entities = $this->em->getRepository($this->class)->findAll();
+            }
         }
 
         try {
@@ -523,7 +523,7 @@ class EntityChoiceList extends ObjectChoiceList
 
     /**
      * Gets label property path used for the label
-     * 
+     *
      * @return string|null
      */
     private function getLabelPropertyPath()
@@ -531,7 +531,16 @@ class EntityChoiceList extends ObjectChoiceList
         if ($this->labelPath) {
             return $this->labelPath->__toString();
         }
-        
+
         return null;
+    }
+
+    protected function extractLabels($choices, array &$labels)
+    {
+        if ($this->hasValues) {
+            return;
+        }
+
+        return parent::extractLabels($choices, $labels);
     }
 }

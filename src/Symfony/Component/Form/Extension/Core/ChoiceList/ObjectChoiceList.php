@@ -242,7 +242,7 @@ class ObjectChoiceList extends ChoiceList
         return parent::createValue($choice);
     }
 
-    private function extractLabels($choices, array &$labels)
+    protected function extractLabels($choices, array &$labels)
     {
         foreach ($choices as $i => $choice) {
             if (is_array($choice)) {
