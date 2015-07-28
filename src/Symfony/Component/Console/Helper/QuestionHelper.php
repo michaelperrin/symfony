@@ -127,11 +127,7 @@ class QuestionHelper extends Helper
             }
 
             if (false === $ret) {
-                $ret = fgets($inputStream, 4096);
-                if (false === $ret) {
-                    throw new \RuntimeException('Aborted');
-                }
-                $ret = trim($ret);
+                $ret = $this->readFromInput($inputStream);
             }
         } else {
             $ret = trim($this->autocomplete($output, $question, $inputStream));
@@ -424,6 +420,32 @@ class QuestionHelper extends Helper
     }
 
     /**
+     * Reads user input.
+     *
+     * @param resource $stream The input stream
+     *
+     * @return string User input
+     *
+     * @throws \RuntimeException
+     */
+    private function readFromInput($stream)
+    {
+        if (STDIN === $stream && $this->hasReadline()) {
+            $ret = readline();
+        } else {
+            $ret = fgets($stream, 4096);
+
+            if (false === $ret) {
+                throw new \RuntimeException('Aborted');
+            }
+
+            $ret = trim($ret);
+        }
+
+        return $ret;
+    }
+
+    /**
      * Returns whether Stty is available or not.
      *
      * @return bool
@@ -437,5 +459,15 @@ class QuestionHelper extends Helper
         exec('stty 2>&1', $output, $exitcode);
 
         return self::$stty = $exitcode === 0;
+    }
+
+    /**
+     * Returns whether the GNU Readline library is available or not.
+     *
+     * @return bool
+     */
+    private function hasReadline()
+    {
+        return function_exists('readline');
     }
 }
