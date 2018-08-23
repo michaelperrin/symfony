@@ -15,6 +15,6 @@ class RedisArraySessionHandlerTest extends AbstractRedisSessionHandlerTestCase
 {
     protected function createRedisClient(string $host, int $port = null): \RedisArray
     {
-        return new \RedisArray(array($host));
+        return new \RedisArray(array(sprintf('%s:%d', $host, $port)));
     }
 }
