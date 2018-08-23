@@ -40,7 +40,7 @@ abstract class AbstractRedisSessionHandlerTestCase extends TestCase
     /**
      * @return \Redis|\RedisArray|\RedisCluster|\Predis\Client
      */
-    abstract protected function createRedisClient(string $host);
+    abstract protected function createRedisClient(string $host, int $port = null);
 
     protected function setUp()
     {
@@ -51,11 +51,12 @@ abstract class AbstractRedisSessionHandlerTestCase extends TestCase
         }
 
         $host = getenv('REDIS_HOST') ?: 'localhost';
+        $port = getenv('REDIS_PORT') ? (int) getenv('REDIS_PORT') : 6379;
 
         $this->validator = new \Redis();
         $this->validator->connect($host);
 
-        $this->redisClient = $this->createRedisClient($host);
+        $this->redisClient = $this->createRedisClient($host, $port);
         $this->storage = new RedisSessionHandler(
             $this->redisClient,
             array('prefix' => self::PREFIX)
