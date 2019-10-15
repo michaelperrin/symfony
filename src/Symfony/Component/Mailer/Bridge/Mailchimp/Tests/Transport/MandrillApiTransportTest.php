@@ -13,6 +13,9 @@ namespace Symfony\Component\Mailer\Bridge\Mailchimp\Tests\Transport;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Mailer\Bridge\Mailchimp\Transport\MandrillApiTransport;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
+use Symfony\Component\Mime\NamedAddress;
 
 class MandrillApiTransportTest extends TestCase
 {
@@ -22,6 +25,72 @@ class MandrillApiTransportTest extends TestCase
     public function testToString(MandrillApiTransport $transport, string $expected)
     {
         $this->assertSame($expected, (string) $transport);
+    }
+
+    public function testPayload()
+    {
+        $email = new Email();
+        $email
+            ->from(new NamedAddress('test@example.com', 'My Name'))
+            ->subject('Subject')
+            ->text('Message')
+            ->to(
+                new NamedAddress('recipient@example.com', 'Recipient Name')
+            )
+        ;
+
+        new MandrillApiTransport('KEY')
+    }
+
+    public function testSend()
+    {
+        $email = new Email();
+        $email
+            ->from(new NamedAddress('test@example.com', 'My Name'))
+            ->subject('Subject')
+            ->text('Message')
+            ->to(
+                new NamedAddress('recipient@example.com', 'Recipient Name')
+            )
+            ->bcc('baz@example.com')
+        ;
+
+        $response = $this->createMock(ResponseInterface::class);
+
+        $response
+            ->expects($this->once())
+            ->method('getStatusCode')
+            ->willReturn(202);
+        $response
+            ->expects($this->once())
+            ->method('getHeaders')
+            ->willReturn(['x-message-id' => '1']);
+
+        $httpClient = $this->createMock(HttpClientInterface::class);
+
+        $httpClient
+            ->expects($this->once())
+            ->method('request')
+            ->with('POST', 'https://api.sendgrid.com/v3/mail/send', [
+                'json' => [
+                    'personalizations' => [
+                        [
+                            'to' => [['email' => 'bar@example.com']],
+                            'subject' => null,
+                            'bcc' => [['email' => 'baz@example.com']],
+                        ],
+                    ],
+                    'from' => ['email' => 'foo@example.com'],
+                    'content' => [
+                        ['type' => 'text/plain', 'value' => 'content'],
+                    ],
+                ],
+                'auth_bearer' => 'foo',
+            ])
+            ->willReturn($response);
+
+        $mailer = new SendgridApiTransport('foo', $httpClient);
+        $mailer->send($email);
     }
 
     public function getTransportData()
