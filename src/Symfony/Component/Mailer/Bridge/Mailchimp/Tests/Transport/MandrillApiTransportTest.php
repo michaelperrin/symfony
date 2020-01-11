@@ -16,6 +16,8 @@ use Symfony\Component\Mailer\Bridge\Mailchimp\Transport\MandrillApiTransport;
 use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 
 class MandrillApiTransportTest extends TestCase
 {
@@ -43,6 +45,77 @@ class MandrillApiTransportTest extends TestCase
                 'mandrill+api://example.com:99',
             ],
         ];
+    }
+
+    public function testSend()
+    {
+        $email = new Email();
+        $email->from(new Address('foo@example.com', 'Ms. Foo Bar'))
+            ->to(new Address('bar@example.com', 'Mr. Recipient'))
+            ->bcc('baz@example.com')
+            ->subject('Email subject')
+            ->text('content')
+            ->html('<div>HTML content</div>')
+            ->embed('example image content', 'IMAGECID', 'image/png');
+
+        $response = $this->createMock(ResponseInterface::class);
+
+        $response
+            ->expects($this->once())
+            ->method('getStatusCode')
+            ->willReturn(200);
+
+        $response
+            ->expects($this->once())
+            ->method('toArray')
+            ->willReturn([
+                [
+                    'email' => 'recipient.email@example.com',
+                    'status' => 'sent',
+                    'reject_reason' => 'hard-bounce',
+                    '_id' => 'abc123abc123abc123abc123abc123',
+                ],
+            ]);
+
+        $httpClient = $this->createMock(HttpClientInterface::class);
+
+        $httpClient
+            ->expects($this->once())
+            ->method('request')
+            ->with('POST', 'https://mandrillapp.com/api/1.0/messages/send.json', [
+                'json' => [
+                    'key' => 'foo',
+                    'message' => [
+                        'text' => 'content',
+                        'html' => '<div>HTML content</div>',
+                        'subject' => 'Email subject',
+                        'from_email' => 'foo@example.com',
+                        'from_name' => 'Ms. Foo Bar',
+                        'to' => [
+                            [
+                                'email' => 'bar@example.com',
+                                'name' => 'Mr. Recipient',
+                                'type' => 'to',
+                            ],
+                            [
+                                'email' => 'baz@example.com',
+                                'type' => 'bcc',
+                            ],
+                        ],
+                        'images' => [
+                            [
+                                'type' => 'image/png',
+                                'name' => 'IMAGECID',
+                                'content' => base64_encode('example image content'),
+                            ],
+                        ],
+                    ],
+                ],
+            ])
+            ->willReturn($response);
+
+        $mailer = new MandrillApiTransport('foo', $httpClient);
+        $mailer->send($email);
     }
 
     public function testCustomHeader()
